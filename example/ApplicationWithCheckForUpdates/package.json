@@ -15,6 +15,6 @@
   "year": "2018",
   "private": true,
   "dependencies": {
-    "@autoit-gui-skeleton/AGS-component-check-for-updates": "^1.0.0"
+    "@autoit-gui-skeleton/ags-component-check-for-updates": "^1.0.0"
   }
 }
