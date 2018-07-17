@@ -1,0 +1,54 @@
+{
+  "name": "@autoit-gui-skeleton/ags-component-check-for-updates",
+  "version": "1.0.0",
+  "description": "Add the feature to check for updates to an AutoIt application built with the AGS framework.",
+  "author": "20100 <vb20100bv@gmail.com> (https://github.com/v20100v)",
+  "contributors": [
+    "v20100v <vb20100bv@gmail.com> (https://github.com/v20100v)"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "AGS",
+    "AutoIt",
+    "AutoIt-GUI-Skeleton",
+    "AGS-component",
+    "check-for-updates"
+  ],
+  "homepage": "https://autoit-gui-skeleton.github.io/",
+  "repository": {
+    "url": "https://github.com/autoit-gui-skeleton/ags-component-check-for-updates.git",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://github.com/autoit-gui-skeleton/ags-component-check-for-updates/issues"
+  },
+  "dependencies": {
+    "@autoit-gui-skeleton/ags-component-http-request": "^1.0.0",
+    "@autoit-gui-skeleton/ags-wrapper-json": "^1.0.1"
+  },
+  "files": [
+    ".gitignore",
+    ".yarnrc",
+    "AGS-component-check-for-updates.au3",
+    "LICENSE",
+    "package.json",
+    "README.md",
+    "yarn.lock",
+    "example/ApplicationWithCheckForUpdates/assets/**/*",
+    "example/ApplicationWithCheckForUpdates/config/parameters.ini.dist",
+    "example/ApplicationWithCheckForUpdates/docs/**/*",
+    "example/ApplicationWithCheckForUpdates/src/**/*",
+    "example/ApplicationWithCheckForUpdates/*.*"
+  ],
+  "AGS": {
+    "framework": {
+      "version": "1.0.0"
+    },
+    "AutoIt": {
+      "version": "3.3.14.5"
+    },
+    "component": {
+      "main": "ags-component-check-for-updates.au3"
+    }
+  }
+}
