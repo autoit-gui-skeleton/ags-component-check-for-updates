@@ -1,6 +1,6 @@
 {
   "name": "@autoit-gui-skeleton/ags-component-check-for-updates",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Add the feature to check for updates to an AutoIt application built with the AGS framework.",
   "author": "20100 <vb20100bv@gmail.com> (https://github.com/v20100v)",
   "contributors": [
