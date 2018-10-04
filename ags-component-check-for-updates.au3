@@ -253,6 +253,7 @@ Func _GUI_launch_CheckForUpdates($main_GUI, $context)
 		_GUI_build_view_to_CheckForUpdates($main_GUI, $resultCheckUpdates, $context)
 	EndIf
 
+	GUISetCursor(2, $GUI_CURSOR_OVERRIDE)
 	_GUI_Handler_Menu($GUI_ENABLE)
 EndFunc
 
