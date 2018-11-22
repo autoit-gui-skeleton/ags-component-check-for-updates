@@ -10,6 +10,17 @@ Component title   : check-for-updates
 AutoIt version    : 3.3.14.5
 Author            : v20100v <7567933+v20100v@users.noreply.github.com>
 Package           : AGS version 1.0.0
+
+This component use global variables. Remember in AGS, all global variables are
+defined in './src/GLOBALS.au3'
+
+ - $CHECK_FOR_UPDATES_REMOTE_RELEASES_JSON
+ - $CHECK_FOR_UPDATES_LOGO (image 128x128)
+ - $CHECK_FOR_UPDATES_ICO
+ - $CHECK_FOR_UPDATES_LANGUAGE ("FR" or "US", "US is used as default language")
+ - $APP_NAME
+ - $APP_VERSION
+
 #ce --------------------------------------------------------------------------------------------------------
 
 
@@ -21,6 +32,33 @@ Package           : AGS version 1.0.0
 
 
 Opt('MustDeclareVars', 1)
+
+
+check_component_global_variables()
+
+
+;===============================================================================
+; Check if global variables for this component exist
+;
+; @return void in case of no problem, and exit application otherwise
+;===============================================================================
+Func check_component_global_variables()
+  local $msgError = ""
+  If Not IsDeclared("CHECK_FOR_UPDATES_REMOTE_RELEASES_JSON") Then
+    $msgError = $msgError & "The global variable $CHECK_FOR_UPDATES_REMOTE_RELEASES_JSON doesn't exist. It must be defined in GLOBALS.au3 file." & @CRLF
+  EndIf
+  If Not IsDeclared("CHECK_FOR_UPDATES_LOGO") Then
+    $msgError = $msgError & "The global variable $CHECK_FOR_UPDATES_LOGO doesn't exist. It must be defined in GLOBALS.au3 file." & @CRLF
+  EndIf
+  If Not IsDeclared("CHECK_FOR_UPDATES_ICO") Then
+    $msgError = $msgError & "The global variable $CHECK_FOR_UPDATES_ICO doesn't exist. It must be defined in GLOBALS.au3 file." & @CRLF
+  EndIf
+
+  If($msgError <> "") Then
+    MsgBox(16, "Error in ags-component-check-for-updates", "Application stop now, because :" &@CRLF&@CRLF&$msgError)
+    Exit
+  EndIf
+EndFunc
 
 
 ;===========================================================================================================
@@ -225,7 +263,7 @@ Func _GUI_launch_CheckForUpdates($main_GUI, $context)
 	_GUI_Handler_Menu($GUI_DISABLE)
 
 	Local $currentApplicationVersion = $APP_VERSION
-	Local $remoteUrlReleasesJson = $APP_REMOTE_RELEASES_JSON
+	Local $remoteUrlReleasesJson = $CHECK_FOR_UPDATES_REMOTE_RELEASES_JSON
 
 	; Read settings in parameters.ini file
 	Local $LAUNCH_CHECK_FOR_UPDATE_ON_STARTUP = Int(IniRead($APP_PARAMETERS_INI, "AGS_CHECK_FOR_UPDATES", "LAUNCH_CHECK_FOR_UPDATE_ON_STARTUP", "NotFound"))
@@ -283,28 +321,53 @@ Func _GUI_build_view_to_CheckForUpdates($main_GUI, $resultCheckForUpdate, $conte
 	Local $title_child_GUI, $text_label_update_informations, $text_label_release_notes
 
 	If $resultCheckForUpdate[0] = "UPDATE_AVAILABLE" Then
-		$title_child_GUI = "A new update is available"
+		$title_child_GUI = "A new update is available !"
 		$text_label_update_informations = $APP_NAME & " v" & $resultCheckForUpdate[1] & " is not up to date." & @CRLF _
 				 & "The last version is " & $resultCheckForUpdate[2] & " and it was published on " & $resultCheckForUpdate[5] & "."
 		$text_label_release_notes = "See the releases notes of last version " & $resultCheckForUpdate[2] & "."
+
+		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+			$title_child_GUI = "Une nouvelle version est disponible !"
+			$text_label_update_informations = "L'application "$APP_NAME & " v" & $resultCheckForUpdate[1] & " n'est pas à jour." & @CRLF _
+				 & "La version " & $resultCheckForUpdate[2] & " est la dernière disponible, et a été publié le " & $resultCheckForUpdate[5] & "."
+			$text_label_release_notes = "Voir les notes de version de cette dernière version " & $resultCheckForUpdate[2] & "."
+		EndIf
 	ElseIf $resultCheckForUpdate[0] = "NO_UPDATE_AVAILABLE" Then
 		$title_child_GUI = "No update available"
 		$text_label_update_informations = $APP_NAME & " v" & $resultCheckForUpdate[1] & " is the last version." & @CRLF & _
 				"It was published on " & $resultCheckForUpdate[5] & "."
 		$text_label_release_notes = "See the releases notes of this version " & $resultCheckForUpdate[1] & "."
+		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+			$title_child_GUI = "Votre application est à jour"
+			$text_label_update_informations = "L'application utilisée "$APP_NAME & " v" & $resultCheckForUpdate[1] & " est la dernière version disponible." & @CRLF _
+				 & "Elle a été publié le " & $resultCheckForUpdate[5] & "."
+			$text_label_release_notes = "Voir les notes de version de cette version " & $resultCheckForUpdate[2] & "."
+		EndIf
 	ElseIf $resultCheckForUpdate[0] = "CURRENT_VERSION_GREATER_UPDATE_AVAILABLE" Then
 		$title_child_GUI = "Current version use is higher than the last published version"
 		$text_label_update_informations = $APP_NAME & " v" & $resultCheckForUpdate[1] & " is an experimental version." & @CRLF & _
 				"The version " & $resultCheckForUpdate[2] & " is the last one published on " & $resultCheckForUpdate[5] & "."
 		$text_label_release_notes = "See the releases notes of the last one version published on " & $resultCheckForUpdate[2] & "."
+		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+			$title_child_GUI = "Votre application est une version expérimentale"
+			$text_label_update_informations = "L'application utilisée "$APP_NAME & " v" & $resultCheckForUpdate[1] & " est une version expérimentale." & @CRLF _
+				 & "La version" & $resultCheckForUpdate[2] & " est la dernière version stable, publié le " & $resultCheckForUpdate[5] & "."
+			$text_label_release_notes = "Voir les notes de version de cette version " & $resultCheckForUpdate[2] & "."
+		EndIf
 	EndIf
 
 	If ($context = "ON_STARTUP" And $resultCheckForUpdate[0] = "UPDATE_AVAILABLE") Or ($context <> "ON_STARTUP") Then
 
 		; Create child GUI, related to a given $main_GUI
 		GUISetState(@SW_DISABLE, $main_GUI)
-		Local $update_GUI = GUICreate("Check for updates to " & $APP_NAME & " v" & $APP_VERSION, 600, 240, -1, -1)
-		Local $logo_CHECK_UPDATE = GUICtrlCreatePic($APP_FOLDER_ASSETS & "/images/myApplication.bmp", 40, 60, 128, 128)
+
+		Local $update_GUI
+		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+			$update_GUI = GUICreate("Vérifier les mises à jour de " & $APP_NAME & " v" & $APP_VERSION, 600, 240, -1, -1)
+		Else
+			$update_GUI = GUICreate("Check for updates to " & $APP_NAME & " v" & $APP_VERSION, 600, 240, -1, -1)
+		Endif
+		Local $logo_CHECK_UPDATE = GUICtrlCreatePic($CHECK_FOR_UPDATES_LOGO, 40, 60, 128, 128)
 
 		; Title child GUI
 		GUISetFont(16, 900, 0, "Arial Narrow")
@@ -314,12 +377,18 @@ Func _GUI_build_view_to_CheckForUpdates($main_GUI, $resultCheckForUpdate, $conte
 
 		; Label update informations
 		GUISetFont(10, 400, 0, "Segoe UI")
-		GUISetIcon($APP_FOLDER_ASSETS & "/images/myApplication.ico")
+		GUISetIcon($CHECK_FOR_UPDATES_ICO)
 		GUISetBkColor(0xFFFFFF)
 		Local $label_update_informations = GUICtrlCreateLabel($text_label_update_informations, 188, 70)
 
 		; Label download
-		Local $label_update_download = GUICtrlCreateLabel("Download the last version.", 198, 130)
+		Local $label_update_download
+		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+			$label_update_download = GUICtrlCreateLabel("Télécharger la dernière version.", 198, 130)
+		Else
+			$label_update_download = GUICtrlCreateLabel("Download the last version.", 198, 130)
+		Endif
+
 		GUICtrlSetColor($label_update_download, 0x5487FB)
 		GUICtrlSetCursor($label_update_download, 0)
 
