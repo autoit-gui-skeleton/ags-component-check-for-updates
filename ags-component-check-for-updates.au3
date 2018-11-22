@@ -34,9 +34,6 @@ defined in './src/GLOBALS.au3'
 Opt('MustDeclareVars', 1)
 
 
-check_component_global_variables()
-
-
 ;===============================================================================
 ; Check if global variables for this component exist
 ;
@@ -262,33 +259,43 @@ Func _GUI_launch_CheckForUpdates($main_GUI, $context)
 	GUISetCursor(15, $GUI_CURSOR_OVERRIDE)
 	_GUI_Handler_Menu($GUI_DISABLE)
 
+  check_component_global_variables()
+
 	Local $currentApplicationVersion = $APP_VERSION
 	Local $remoteUrlReleasesJson = $CHECK_FOR_UPDATES_REMOTE_RELEASES_JSON
 
 	; Read settings in parameters.ini file
 	Local $LAUNCH_CHECK_FOR_UPDATE_ON_STARTUP = Int(IniRead($APP_PARAMETERS_INI, "AGS_CHECK_FOR_UPDATES", "LAUNCH_CHECK_FOR_UPDATE_ON_STARTUP", "NotFound"))
 	Local $proxy = IniRead($APP_PARAMETERS_INI, "AGS_HTTP_REQUEST", "PROXY", "NotFound")
+  Local $msgError = ""
 
 	If ($context = "ON_STARTUP" And $LAUNCH_CHECK_FOR_UPDATE_ON_STARTUP = 1) Or ($context <> "ON_STARTUP") Then
 		Local $resultCheckUpdates = CheckForUpdates($currentApplicationVersion, $remoteUrlReleasesJson)
 		If (@error) Then
-			Local $msgError = "Unable to connect with the remote server use to check if a new version is available." & _
-					@CRLF & @CRLF & _
-					"Code error = AGS_CHECK_FOR_UPDATES_" & @error & @CRLF & $resultCheckUpdates
-			If ($proxy <> "NotFound") Then
-				$msgError = $msgError & @CRLF & @CRLF & "We found a proxy settings into configuration file of application, equals to : " & $proxy
-			Else
-				$msgError = $msgError & @CRLF & @CRLF & "We doesn't found proxy settings into configuration file of application. Maybe you have to add one."
-			EndIf
-			MsgBox(16, "Error in check for updates", $msgError)
-			GUISetCursor(2, $GUI_CURSOR_OVERRIDE)
-			_GUI_Handler_Menu($GUI_ENABLE)
-			Return Null
+      If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+        $msgError = "Impossible de se connecter au serveur distant pour vérifier l'existence d'une nouvelle version." & _
+        @CRLF & @CRLF & _
+        "Code erreur = AGS_CHECK_FOR_UPDATES_" & @error & @CRLF & $resultCheckUpdates
+        If ($proxy <> "NotFound") Then
+          $msgError = $msgError & @CRLF & @CRLF & "Il existe une configuration proxy dans l'application, égale à : " & $proxy
+        Else
+          $msgError = $msgError & @CRLF & @CRLF & "Il n'existe pas de configuraiton proxy dans l'application. Peut être il faut en ajouter une ^^."
+        EndIf
+      Else
+        $msgError = "Unable to connect with the remote server use to check if a new version is available." & _
+          @CRLF & @CRLF & _
+          "Code error = AGS_CHECK_FOR_UPDATES_" & @error & @CRLF & $resultCheckUpdates
+        If ($proxy <> "NotFound") Then
+          $msgError = $msgError & @CRLF & @CRLF & "We found a proxy settings into configuration file of application, equals to : " & $proxy
+        Else
+          $msgError = $msgError & @CRLF & @CRLF & "We doesn't found proxy settings into configuration file of application. Maybe you have to add one."
+        EndIf
+      EndIf
 		EndIf
 
 		; Build a child GUI to show results of check for update
 		GUISetCursor(2, $GUI_CURSOR_OVERRIDE)
-		_GUI_build_view_to_CheckForUpdates($main_GUI, $resultCheckUpdates, $context)
+		_GUI_build_view_to_CheckForUpdates($main_GUI, $resultCheckUpdates, $msgError, $context)
 	EndIf
 
 	GUISetCursor(2, $GUI_CURSOR_OVERRIDE)
@@ -316,57 +323,75 @@ EndFunc
 ;   GUI_build_view_to_CheckForUpdates($main_GUI, resultCheckForUpdate, "ON_STARTUP")
 ; </code>
 ;==============================================================================================================
-Func _GUI_build_view_to_CheckForUpdates($main_GUI, $resultCheckForUpdate, $context = "")
+Func _GUI_build_view_to_CheckForUpdates($main_GUI, $resultCheckForUpdate, $msgError, $context = "")
 
 	Local $title_child_GUI, $text_label_update_informations, $text_label_release_notes
 
-	If $resultCheckForUpdate[0] = "UPDATE_AVAILABLE" Then
-		$title_child_GUI = "A new update is available !"
-		$text_label_update_informations = $APP_NAME & " v" & $resultCheckForUpdate[1] & " is not up to date." & @CRLF _
-				 & "The last version is " & $resultCheckForUpdate[2] & " and it was published on " & $resultCheckForUpdate[5] & "."
-		$text_label_release_notes = "See the releases notes of last version " & $resultCheckForUpdate[2] & "."
+  If ($msgError = "") Then
 
-		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
-			$title_child_GUI = "Une nouvelle version est disponible !"
-			$text_label_update_informations = "L'application "$APP_NAME & " v" & $resultCheckForUpdate[1] & " n'est pas à jour." & @CRLF _
-				 & "La version " & $resultCheckForUpdate[2] & " est la dernière disponible, et a été publié le " & $resultCheckForUpdate[5] & "."
-			$text_label_release_notes = "Voir les notes de version de cette dernière version " & $resultCheckForUpdate[2] & "."
-		EndIf
-	ElseIf $resultCheckForUpdate[0] = "NO_UPDATE_AVAILABLE" Then
-		$title_child_GUI = "No update available"
-		$text_label_update_informations = $APP_NAME & " v" & $resultCheckForUpdate[1] & " is the last version." & @CRLF & _
-				"It was published on " & $resultCheckForUpdate[5] & "."
-		$text_label_release_notes = "See the releases notes of this version " & $resultCheckForUpdate[1] & "."
-		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
-			$title_child_GUI = "Votre application est à jour"
-			$text_label_update_informations = "L'application utilisée "$APP_NAME & " v" & $resultCheckForUpdate[1] & " est la dernière version disponible." & @CRLF _
-				 & "Elle a été publié le " & $resultCheckForUpdate[5] & "."
-			$text_label_release_notes = "Voir les notes de version de cette version " & $resultCheckForUpdate[2] & "."
-		EndIf
-	ElseIf $resultCheckForUpdate[0] = "CURRENT_VERSION_GREATER_UPDATE_AVAILABLE" Then
-		$title_child_GUI = "Current version use is higher than the last published version"
-		$text_label_update_informations = $APP_NAME & " v" & $resultCheckForUpdate[1] & " is an experimental version." & @CRLF & _
-				"The version " & $resultCheckForUpdate[2] & " is the last one published on " & $resultCheckForUpdate[5] & "."
-		$text_label_release_notes = "See the releases notes of the last one version published on " & $resultCheckForUpdate[2] & "."
-		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
-			$title_child_GUI = "Votre application est une version expérimentale"
-			$text_label_update_informations = "L'application utilisée "$APP_NAME & " v" & $resultCheckForUpdate[1] & " est une version expérimentale." & @CRLF _
-				 & "La version" & $resultCheckForUpdate[2] & " est la dernière version stable, publié le " & $resultCheckForUpdate[5] & "."
-			$text_label_release_notes = "Voir les notes de version de cette version " & $resultCheckForUpdate[2] & "."
-		EndIf
-	EndIf
+  	If $resultCheckForUpdate[0] = "UPDATE_AVAILABLE" Then
+  		$title_child_GUI = "A new update is available !"
+  		$text_label_update_informations = $APP_NAME & " v" & $resultCheckForUpdate[1] & " is not up to date." & @CRLF _
+  				 & "The last version is " & $resultCheckForUpdate[2] & " and it was published on " & $resultCheckForUpdate[5] & "."
+  		$text_label_release_notes = "See the releases notes of last version " & $resultCheckForUpdate[2] & "."
+  		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+  			$title_child_GUI = "Une nouvelle version est disponible !"
+  			$text_label_update_informations = "L'application " & $APP_NAME & " v" & $resultCheckForUpdate[1] & " n'est pas à jour." & @CRLF _
+  				 & "La version " & $resultCheckForUpdate[2] & " est la dernière disponible, et a été publié le " & $resultCheckForUpdate[5] & "."
+  			$text_label_release_notes = "Voir les notes de version de cette dernière version " & $resultCheckForUpdate[2] & "."
+  		EndIf
+  	ElseIf $resultCheckForUpdate[0] = "NO_UPDATE_AVAILABLE" Then
+  		$title_child_GUI = "No update available"
+  		$text_label_update_informations = $APP_NAME & " v" & $resultCheckForUpdate[1] & " is the last version." & @CRLF & _
+  				"It was published on " & $resultCheckForUpdate[5] & "."
+  		$text_label_release_notes = "See the releases notes of this version " & $resultCheckForUpdate[1] & "."
+  		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+  			$title_child_GUI = "Votre application est à jour"
+  			$text_label_update_informations = "L'application utilisée " & $APP_NAME & " v" & $resultCheckForUpdate[1] & " est la dernière version disponible." & @CRLF _
+  				 & "Elle a été publié le " & $resultCheckForUpdate[5] & "."
+  			$text_label_release_notes = "Voir les notes de version de cette version " & $resultCheckForUpdate[2] & "."
+  		EndIf
+  	ElseIf $resultCheckForUpdate[0] = "CURRENT_VERSION_GREATER_UPDATE_AVAILABLE" Then
+  		$title_child_GUI = "Current version use is higher than the last published version"
+  		$text_label_update_informations = $APP_NAME & " v" & $resultCheckForUpdate[1] & " is an experimental version." & @CRLF & _
+  				"The version " & $resultCheckForUpdate[2] & " is the last one published on " & $resultCheckForUpdate[5] & "."
+  		$text_label_release_notes = "See the releases notes of the last one version published on " & $resultCheckForUpdate[2] & "."
+  		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+  			$title_child_GUI = "Votre application est une version expérimentale"
+  			$text_label_update_informations = "L'application utilisée " & $APP_NAME & " v" & $resultCheckForUpdate[1] & " est une version expérimentale." & @CRLF _
+  				 & "La version " & $resultCheckForUpdate[2] & " est la dernière version stable, publié le " & $resultCheckForUpdate[5] & "."
+  			$text_label_release_notes = "Voir les notes de version de cette version " & $resultCheckForUpdate[2] & "."
+  		EndIf
+    EndIf
+
+  Else
+    $title_child_GUI = "Error with check-for-updates"
+    If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+      $title_child_GUI = "Erreur dans la recherche d'une mise à jour"
+    EndIf
+    $text_label_update_informations = $msgError
+    $text_label_release_notes = ""
+  EndIf
+
 
 	If ($context = "ON_STARTUP" And $resultCheckForUpdate[0] = "UPDATE_AVAILABLE") Or ($context <> "ON_STARTUP") Then
 
 		; Create child GUI, related to a given $main_GUI
 		GUISetState(@SW_DISABLE, $main_GUI)
 
-		Local $update_GUI
-		If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
-			$update_GUI = GUICreate("Vérifier les mises à jour de " & $APP_NAME & " v" & $APP_VERSION, 600, 240, -1, -1)
-		Else
-			$update_GUI = GUICreate("Check for updates to " & $APP_NAME & " v" & $APP_VERSION, 600, 240, -1, -1)
-		Endif
+		Local $update_GUI_WIDTH = 600
+    Local $update_GUI_HEIGHT = 240
+    If($msgError <> "") Then
+      $update_GUI_WIDTH = 900
+      $update_GUI_HEIGHT = 300
+    EndIf
+    Local $update_GUI
+    If($CHECK_FOR_UPDATES_LANGUAGE = "FR") Then
+      $update_GUI = GUICreate("Vérifier les mises à jour de " & $APP_NAME & " v" & $APP_VERSION, $update_GUI_WIDTH, $update_GUI_HEIGHT, -1, -1, BitXOR($GUI_SS_DEFAULT_GUI, $WS_MINIMIZEBOX, $WS_CLIPCHILDREN))
+    Else
+      $update_GUI = GUICreate("Check for updates to " & $APP_NAME & " v" & $APP_VERSION, $update_GUI_WIDTH, $update_GUI_HEIGHT, -1, -1, BitXOR($GUI_SS_DEFAULT_GUI, $WS_MINIMIZEBOX, $WS_CLIPCHILDREN))
+    Endif
+
 		Local $logo_CHECK_UPDATE = GUICtrlCreatePic($CHECK_FOR_UPDATES_LOGO, 40, 60, 128, 128)
 
 		; Title child GUI
@@ -399,11 +424,16 @@ Func _GUI_build_view_to_CheckForUpdates($main_GUI, $resultCheckForUpdate, $conte
 
 		; Handle visibility and position of elements
 		GUICtrlSetState($label_update_download, $GUI_HIDE)
-		If $resultCheckForUpdate[0] = "UPDATE_AVAILABLE" Then
-			GUICtrlSetState($label_update_download, $GUI_SHOW)
-		Else
-			GUICtrlSetPos($label_update_release_notes, 198, 130)
-		EndIf
+    If ($msgError = "") Then
+      If $resultCheckForUpdate[0] = "UPDATE_AVAILABLE" Then
+        GUICtrlSetState($label_update_download, $GUI_SHOW)
+      Else
+        GUICtrlSetPos($label_update_release_notes, 198, 130)
+      EndIf
+    Else
+
+    EndIf
+
 
 		; Button OK
 		Local $button_update_OK = GUICtrlCreateButton("OK", 490, 200, 90)
